@@ -5,22 +5,20 @@ using namespace std;
 typedef long long ll;
 //计算多少次可以超过life位
 int f(ll x,int life){
-    int count=1;
-    //统计位数
-    ll w=floor(log10(x)+1);
-    if(w>life){
-        return 0;
-    }
-    for(;;count++){
-        if(count%2){
-            w+=floor(log10(x));
-            if(w>life)
+    int count=0;
+    if(floor(log10(x))+1>life)
             return count;
+    else
+    count++;
+    for(;;count++){
+        if(floor(log10(x))+1>life)
+            return count;
+        if(count%2==0){
+            x*=x;
+            x*=count;
         }
         else{
-            w+=floor(log10(x)+log10(count));
-            if(w>life)
-            return count;
+            x*=x;
         }
     }
 }

@@ -1,41 +1,53 @@
 
 #include<iostream>
 #include<unordered_map>
+#include<vector>
+
+typedef long long ll;
 using namespace std;
 
-//二分查找
-int find(int *a,int left,int right,int x){
-    int mid=(left+right)/2;
-    if(left>right){
-        return -1;
-    }
-    else if(a[mid]==x){
-        return mid;
-    }
-    else if(a[mid]>x){
-        return find(a,left,mid-1,x);
-    }
-    else{
-        return find(a,mid+1,right,x);
-    }
-}
+//first为要查的数，second是下标
+unordered_map<ll,int> num;
 
 int main(){
-    int x,y,z;
-    int n;
+    ll x;//数列第一项
+    ll y;//数列第二项
+    ll z;//一共的相数
+    ll n;//要查询的次数
+
     cin>>x>>y>>z;
     cin>>n;
-    unordered_map<int,int> a;
+
+    //辅助数组
+    vector<ll> a(z);
+
+    num.insert({x,0});
+    num.insert({y,1});
     a[0]=x;
     a[1]=y;
-    for(int i=2;i<z;i++){
+    //构造数列
+    for(ll i=2;i<z;i++){
         a[i]=a[i/2]+a[i/4];
+        auto it=num.find(a[i]);
+        if(it==num.end())
+            num.insert({a[i],i});
+        else{
+            continue;
+        }
     }
-    for(int i=0;i<n;i++){
-        int x;
-        cin>>x;
-        if(a.find())
-        cout<<find(a,0,z-1,x)<<endl;
+
+    //n次查询
+    for(ll i=0;i<n;i++){
+        ll find_num;
+        cin>>find_num;
+        auto it=num.find(find_num);
+        if(it!=num.end()){
+            cout<<it->second<<endl;
+        }
+        else{
+            cout<<"-1"<<endl;
+        }
+
     }
     return 0;
 }
