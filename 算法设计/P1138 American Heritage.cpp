@@ -26,12 +26,9 @@ string postOrder(const string& inorder, const string& preorder) {
     // 右子树的前序遍历是剩下的部分
     string rightPreorder = preorder.substr(1 + leftInorder.size());
     
-    // 递归求得左子树和右子树的后序遍历
-    string leftPostorder = postOrder(leftInorder, leftPreorder);
-    string rightPostorder = postOrder(rightInorder, rightPreorder);
-    
+    // 递归求得左子树和右子树的后序遍历  
     // 后序遍历的顺序是：左子树 + 右子树 + 根节点
-    return leftPostorder + rightPostorder + root;
+    return postOrder(leftInorder, leftPreorder) + postOrder(rightInorder, rightPreorder) + root;
 }
 
 int main() {
