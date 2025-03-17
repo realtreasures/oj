@@ -1,45 +1,47 @@
-#include <iostream>
-#include <string>
+#include<iostream>
+#include<cmath>
+#include<map>
 using namespace std;
 
-// 后序遍历的递归函数
-string postOrder(const string& inorder, const string& preorder) {
-    // 递归的终止条件：如果没有节点，返回空字符串
-    if (inorder.empty()) {
-        return "";
+map<int, int> num;
+
+// 判断位数的函数
+void f(int x) {
+    double logX = log10(x); // 计算 log10(x)
+    double dir = logX; // 初始化 dir 为 log10(x)
+    num[1] = 0; // 初始时，施放 0 次的伤害位数为 1 位
+
+    // 从施放 1 次到 100001 次
+    for (int count = 1; count < 100002; count++) {
+        // 每次施放增加 log10(x)
+        dir += logX;
+        
+        // 如果施放次数为偶数，则额外增加 log10(count)
+        if (count % 2 == 0) {
+            dir += log10(count);
+        }
+        
+        // 计算当前施放次数后的伤害位数，取整后存入 map
+        num[floor(dir) + 1] = count;
     }
-    
-    // 前序遍历的第一个字符是根节点
-    char root = preorder[0];
-    
-    // 在中序遍历中找到根节点的位置
-    int rootPos = inorder.find(root);
-    
-    // 左子树的中序遍历是根节点左边的部分
-    string leftInorder = inorder.substr(0, rootPos);
-    // 右子树的中序遍历是根节点右边的部分
-    string rightInorder = inorder.substr(rootPos + 1);
-    
-    // 左子树的前序遍历是根节点后的部分（与左子树的中序部分大小相等）
-    string leftPreorder = preorder.substr(1, leftInorder.size());
-    // 右子树的前序遍历是剩下的部分
-    string rightPreorder = preorder.substr(1 + leftInorder.size());
-    
-    
-    // 后序遍历的顺序是：左子树 + 右子树 + 根节点
-    return postOrder(leftInorder, leftPreorder)+ postOrder(rightInorder, rightPreorder) + root;
 }
 
 int main() {
-    string inorder, preorder;
-    cin >> inorder;  // 中序遍历
-    cin >> preorder; // 前序遍历
-    
-    // 计算并输出后序遍历
-    string postorder = postOrder(inorder, preorder);
-    cout << postorder << endl;
-    
-    return 0;
+    int x, y;
+    cin >> x >> y;  // 输入初始伤害值 x 和怪物数量 y
 
-    
+    // 预处理伤害位数到施放次数的映射
+    f(x);
+
+    // 处理每个怪物的血量位数
+    for (int i = 0; i < y; i++) {
+        int di;
+        cin >> di;  // 输入怪物的血量位数 di
+        auto it = num.lower_bound(di);  // 查找大于或等于 di 的最小值
+
+        // 输出找到的施放次数
+        cout << it->second << endl;
+    }
+
+    return 0;
 }
