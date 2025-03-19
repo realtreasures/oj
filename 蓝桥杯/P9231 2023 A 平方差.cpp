@@ -29,10 +29,9 @@ int main(){
     for(int i=l;i<=r;i++){
         for(int j=1;j<=sqrt(i);j++){
             int j_match=chu(i,j);
-            if(j_match!=-1){
-                if(Is_same(j,j_match)){
+            if(j_match!=-1&&Is_same(j,j_match)){
                     count++;
-                }
+                    break;
             }
         }
     }
