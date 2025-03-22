@@ -4,36 +4,24 @@
 题目描述：
 给定L-R求x=y平方-z平方，有多少个
 */
+
+
 using namespace std;
 
 //除法运算
-int chu(int x,int d){
-    if(x%d==0){
-        return x/d;
+int chu(int l,int r){
+    int count=0;
+    for(int i=l;i<=r;i++){
+        if(i%4==0||i%2==1){
+            count++;
+        }
     }
-    return -1;//不能整除
-}
-
-//判断是不是同时为奇数或偶数
-bool Is_same(int j,int j_match){
-    if(j%2==j_match%2){
-        return true;
-    }
-    return false;
+    return count;//不能整除
 }
 
 int main(){
     int l,r;//左右边界
-    int count=0;
     cin>>l>>r;
-    for(int i=l;i<=r;i++){
-        for(int j=1;j<=sqrt(i);j++){
-            int j_match=chu(i,j);
-            if(j_match!=-1&&Is_same(j,j_match)){
-                    count++;
-                    break;
-            }
-        }
-    }
+    int count=chu(l,r);
     cout<<count<<endl;
 }
