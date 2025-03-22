@@ -1,6 +1,5 @@
 #include<iostream>
 #include<cmath>
-
 using namespace std;
 
 // 判断 x 是否可以表示为 y^2 - z^2
