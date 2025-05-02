@@ -16,7 +16,7 @@ int main() {
     // 使用 scanf 来加速输入
     for (int i = 0; i < n; i++) {
         scanf("%d %d %d", &a, &b, &c);
-        q.push_back(make_pair(a, make_pair(b, c)));  // (行, (列, 值))
+        q.push_back({a,{b,c}});  // (行, (列, 值))
     }
 
     // 按照值 (v) 升序排序，比较函数使用 pair 的第三个元素 (即值)
