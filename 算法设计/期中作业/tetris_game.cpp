@@ -524,6 +524,7 @@ struct Game {
 // blocks 字段获取后备队列
 // ucblock 字段获取上一次操作后，测评机是否下降了不受控块及其详情
 
+/*
 Block Game::once_place() {    
     Block b = blocks[0];
     // 左端点在哪一格？
@@ -534,6 +535,164 @@ Block Game::once_place() {
     b.move(-l);
     // 确认下落
     return b;
+}
+
+*/
+
+Block Game::once_place() {
+    // 权重配置参数
+    constexpr double kBaseLandingHeightWeight = -3;    // 基础高度惩罚
+    constexpr double kRowsClearedWeight = 1200;        // 消除行奖励
+    constexpr double kRowTransitionsWeight = -2;       // 行变换惩罚
+    constexpr double kHolesWeight = -25;               // 空洞惩罚
+    constexpr double kWellSumWeight = -7;              // 井深惩罚
+    
+    // 动态调整参数
+    constexpr double kHeightDangerThreshold = 15;      // 危险高度阈值
+    constexpr double kDangerHeightMultiplier = 2.5;    // 危险高度权重倍率
+
+    Block best_block = blocks[0];
+    double max_score = -1e9;
+    int max_removed = 0;
+    int best_bottom_fill = 0;          // 最佳底层填充数
+    int best_land_height = LineBound;  // 最佳着陆高度
+
+    // 计算当前地图状态
+    const int current_max_layer = map.max_layer();
+    const bool height_danger = current_max_layer >= kHeightDangerThreshold;
+    const double landing_weight = height_danger ? 
+        kBaseLandingHeightWeight * kDangerHeightMultiplier : 
+        kBaseLandingHeightWeight;
+
+    // 遍历所有可能放置方式
+    for (int rotation = 0; rotation < 4; ++rotation) {
+        Block current = blocks[0].remake_with(rotation);
+        
+        // 计算水平移动范围
+        const int min_x = -current.lbound();
+        const int max_x = ColumnBound - current.rbound();
+
+        // 遍历所有水平位置
+        for (int dx = min_x; dx <= max_x; ++dx) {
+            Block candidate = current;
+            if (!candidate.move(dx)) continue;
+
+            // 模拟下落结果
+            int removed_count;
+            BackMap preview = map.preview_rc(candidate, removed_count);
+            
+            // 计算着陆高度（从底部向上检测）
+            int actual_land_height = LineBound;
+            for (int y = 1; y <= LineBound; ++y) {
+                bool has_block = false;
+                for (int x = 0; x < ColumnBound; ++x) {
+                    if (preview[y][x]) {
+                        has_block = true;
+                        break;
+                    }
+                }
+                if (has_block) {
+                    actual_land_height = LineBound - y;
+                    break;
+                }
+            }
+
+            // 计算底层填充率（第1行）
+            int bottom_row_fill = 0;
+            for (int x = 0; x < ColumnBound; ++x) {
+                if (preview[1][x]) bottom_row_fill++;
+            }
+
+            // 行变换计算（优化版）
+            int transitions = 0;
+            LineMask prev = 0;
+            for (int y = 1; y <= LineBound; ++y) {
+                LineMask curr = 0;
+                for (int x = 0; x < ColumnBound; ++x) {
+                    curr |= (preview[y][x] ? 1 : 0) << x;
+                }
+                transitions += __builtin_popcount(prev ^ curr);
+                prev = curr;
+            }
+
+            // 空洞检测（屋顶法）
+            int holes = 0;
+            std::array<bool, ColumnBound> roof = {false};
+            for (int y = LineBound; y >= 1; --y) {
+                for (int x = 0; x < ColumnBound; ++x) {
+                    if (preview[y][x]) {
+                        roof[x] = true;
+                    } else if (roof[x]) {
+                        ++holes;
+                    }
+                }
+            }
+
+            // 井深计算（精确版本）
+            int well_sum = 0;
+            for (int x = 0; x < ColumnBound; ++x) {
+                int depth = 0;
+                for (int y = LineBound; y >= 1; --y) {
+                    const bool left = (x > 0) && preview[y][x-1];
+                    const bool right = (x < ColumnBound-1) && preview[y][x+1];
+                    const bool current = preview[y][x];
+                    
+                    if (left && right && !current) {
+                        depth += 1;
+                    } else {
+                        well_sum += depth * (depth + 1) / 2;
+                        depth = 0;
+                    }
+                }
+            }
+
+            // 动态得分计算
+            double score = 
+                landing_weight * actual_land_height +
+                kRowsClearedWeight * removed_count +
+                kRowTransitionsWeight * transitions +
+                kHolesWeight * holes +
+                kWellSumWeight * well_sum;
+
+            // 危险高度额外惩罚
+            if (height_danger) {
+                score += (LineBound - current_max_layer) * kBaseLandingHeightWeight * 0.5;
+            }
+
+            // 更新策略（新优先级顺序）
+            bool update = false;
+            if (score > max_score) {
+                update = true;
+            } else if (score == max_score) {
+                if (removed_count > max_removed) {
+                    update = true;
+                } else if (removed_count == max_removed) {
+                    if (bottom_row_fill > best_bottom_fill) {
+                        update = true;
+                    } else if (bottom_row_fill == best_bottom_fill) {
+                        if (actual_land_height < best_land_height) {
+                            update = true;
+                        } else if (actual_land_height == best_land_height) {
+                            if (candidate.get_x() < best_block.get_x()) {
+                                update = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 更新最佳候选
+            if (update) {
+                max_score = score;
+                max_removed = removed_count;
+                best_block = candidate;
+                best_bottom_fill = bottom_row_fill;
+                best_land_height = actual_land_height;
+            }
+        }
+    }
+
+    return best_block;
 }
 
 /* 但是不要修改 main 函数 */
