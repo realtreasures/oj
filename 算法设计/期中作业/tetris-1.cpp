@@ -14,40 +14,40 @@
 #include <mutex>
 #include <optional>
 
-// ¿éÀàĞÍÓĞ8ÖÖ£¬µ«ÊÇÕâÀï°üº¬ÁË0:Unknow
+// å—ç±»å‹æœ‰8ç§ï¼Œä½†æ˜¯è¿™é‡ŒåŒ…å«äº†0:Unknow
 constexpr int BlockTypeVariantCount = 9;
-// ËÄÖÖĞı×ªÀàĞÍ
+// å››ç§æ—‹è½¬ç±»å‹
 constexpr int BlockRotationCount = 4;
-// ÒòÎª¿éÒ»ĞĞÒ»ÁĞ²»»á³¬¹ı4,Ê¹ÓÃÎÒÃÇ¿ÉÒÔÓÃ 4*4 16±ÈÌØ
-// Ñ¹ËõÒ»¸ö¿é£¬ÕâÀï²»Ğ¯´øÆ«ÒÆĞÅÏ¢£¬µ«ÊÇ°üº¬ÁËĞı×ªĞÅÏ¢
+// å› ä¸ºå—ä¸€è¡Œä¸€åˆ—ä¸ä¼šè¶…è¿‡4,ä½¿ç”¨æˆ‘ä»¬å¯ä»¥ç”¨ 4*4 16æ¯”ç‰¹
+// å‹ç¼©ä¸€ä¸ªå—ï¼Œè¿™é‡Œä¸æºå¸¦åç§»ä¿¡æ¯ï¼Œä½†æ˜¯åŒ…å«äº†æ—‹è½¬ä¿¡æ¯
 using ZipBlock = uint16_t;
-// Ò»ĞĞÖ»ÓĞ10ÁĞ£¬ËùÒÔÎÒÃÇÒ²¿ÉÒÔÑ¹ËõÎªÒ»¸ö10±ÈÌØµÄÊı
-// ÏòÉÏÈ¡Õû£¬ÕâÀïÓÃÀ´ u16
+// ä¸€è¡Œåªæœ‰10åˆ—ï¼Œæ‰€ä»¥æˆ‘ä»¬ä¹Ÿå¯ä»¥å‹ç¼©ä¸ºä¸€ä¸ª10æ¯”ç‰¹çš„æ•°
+// å‘ä¸Šå–æ•´ï¼Œè¿™é‡Œç”¨æ¥ u16
 using LineMask = uint16_t;
 
-// ÄãÖªµÀµÄ£¬Ò»ĞĞÖ»ÓĞ10ÁĞ
+// ä½ çŸ¥é“çš„ï¼Œä¸€è¡Œåªæœ‰10åˆ—
 constexpr LineMask FULL = 0b1'111'111'111;
-// ÄãÓÖÖªµÀÒ»±é£¬Ò»ĞĞÖ»ÓĞ10ÁĞÁË
+// ä½ åˆçŸ¥é“ä¸€éï¼Œä¸€è¡Œåªæœ‰10åˆ—äº†
 constexpr int ColumnBound = 10;
-// ÎÒÃÇÔ¤ÁôÁË4ĞĞµÄ¿ÕĞĞ£¬ÓÃÓÚ¼ò»¯´úÂëºÍËÀÍö¼ì²â
+// æˆ‘ä»¬é¢„ç•™äº†4è¡Œçš„ç©ºè¡Œï¼Œç”¨äºç®€åŒ–ä»£ç å’Œæ­»äº¡æ£€æµ‹
 constexpr int BlockBound = 4;
-// Ö÷ÒªµÄµØÍ¼Ö»ÓĞ18ĞĞ
+// ä¸»è¦çš„åœ°å›¾åªæœ‰18è¡Œ
 constexpr int LineBound = 18;
-// ¶à¼ÓÁËÒ»ĞĞÈ«1µÄµØÃæ£¬¼ò»¯Åö×²
+// å¤šåŠ äº†ä¸€è¡Œå…¨1çš„åœ°é¢ï¼Œç®€åŒ–ç¢°æ’
 constexpr int ExtraLine = 1;
 
-// ¿éµÄÄÚ²¿±íÊ¾
+// å—çš„å†…éƒ¨è¡¨ç¤º
 using BlockMask = std::array<LineMask, BlockBound>;
-// µØÍ¼µÄÄÚ²¿±íÊ¾
-// 0 -> È«1µÄÅö×²¼ì²â²ã
-// 1 - 18 Êµ¼ÊÄÜ·ÅµÄµØ·½
-// 19 20 21 22 Ô¤ÁôµÄÎª¿é·ÅÖÃµÄµØ·½
+// åœ°å›¾çš„å†…éƒ¨è¡¨ç¤º
+// 0 -> å…¨1çš„ç¢°æ’æ£€æµ‹å±‚
+// 1 - 18 å®é™…èƒ½æ”¾çš„åœ°æ–¹
+// 19 20 21 22 é¢„ç•™çš„ä¸ºå—æ”¾ç½®çš„åœ°æ–¹
 using MapMask = std::array<LineMask, LineBound + BlockBound + ExtraLine>;
 
 class Block;
 class BackMap;
 class UserController;
-// ·½¿éÃÇµÄÀàĞÍ
+// æ–¹å—ä»¬çš„ç±»å‹
 enum class BlockType : uint8_t {
     One = 1,
     Two = 2,
@@ -73,8 +73,8 @@ static constexpr ZipBlock PreProcessedBlocks[BlockTypeVariantCount][BlockRotatio
 };
 // clang-format on
 
-// ¸Ãº¯ÊıÓÃÓÚ¿ÉÊÓ»¯Ò»ĞĞ
-// ÓÃÓÚµ÷ÊÔ
+// è¯¥å‡½æ•°ç”¨äºå¯è§†åŒ–ä¸€è¡Œ
+// ç”¨äºè°ƒè¯•
 std::string readable(LineMask mask, char color = 'H') {
     std::string result(ColumnBound, '.');
     for (int i = ColumnBound - 1; i >= 0; --i) {
@@ -115,7 +115,7 @@ public:
     }
 };
 
-// »ù±¾·½¿é
+// åŸºæœ¬æ–¹å—
 class Block {
     friend BackMap;
     friend UserController;
@@ -129,7 +129,7 @@ class Block {
         std::fill(mask.begin(), mask.end(), 0);
         do_unzip_on(type, rotation, mask);
     }
-    // ½«Ô¤Ñ¹ËõµÄ·½¿é½âÑ¹µ½BlockMaskÖĞ
+    // å°†é¢„å‹ç¼©çš„æ–¹å—è§£å‹åˆ°BlockMaskä¸­
     static void do_unzip_on(BlockType tp, int rotation, BlockMask& mask) {
         ZipBlock blk = PreProcessedBlocks[(int)tp][rotation];
         for (int i = 0; i < BlockBound; ++i) {
@@ -137,11 +137,11 @@ class Block {
             blk >>= BlockBound;
         }
     }
-    // ×î¸ßÎ»ÊÇÄÄ¸ö±ÈÌØÄØ...
+    // æœ€é«˜ä½æ˜¯å“ªä¸ªæ¯”ç‰¹å‘¢...
     static int hbit(LineMask mask) {
         return mask == 0 ? -1 : std::__lg(mask);
     }
-    // ×îµÍÎ»ÊÇÄÄ¸ö±ÈÌØÄØ...
+    // æœ€ä½ä½æ˜¯å“ªä¸ªæ¯”ç‰¹å‘¢...
     static int lbit(LineMask mask) {
         mask = mask & -mask;
         return mask == 0 ? 10 : std::__lg(mask);
@@ -150,7 +150,7 @@ class Block {
         std::cout << (int)btype << " " << rotation << " " << x << std::endl;
     }
 
-    // ¸Ã·½¿é×î×ó¶ËµÄÏÂ±ê
+    // è¯¥æ–¹å—æœ€å·¦ç«¯çš„ä¸‹æ ‡
     int lbound_inner() const {
         int res = -1;
         for (int i = 0; i < BlockBound; ++i) {
@@ -158,7 +158,7 @@ class Block {
         }
         return res;
     }
-    // ¸Ã·½¿é×îÓÒ¶ËµÄÏÂ±ê
+    // è¯¥æ–¹å—æœ€å³ç«¯çš„ä¸‹æ ‡
     int rbound_inner() const {
         int res = 10;
         for (int i = 0; i < BlockBound; ++i) {
@@ -187,7 +187,7 @@ class Block {
         return true;
     }
 public:
-    // ÓÒĞı90¶ÈÈ»ºó¸´Î»
+    // å³æ—‹90åº¦ç„¶åå¤ä½
     void rotate(int step = 1) {
         rotation = (rotation + step) % BlockRotationCount;
         do_unzip_on(btype, rotation, mask);
@@ -198,11 +198,11 @@ public:
         do_unzip_on(btype, rotation, mask);
         x = 0;
     }
-    // ¸Ã·½¿é×î×ó¶ËµÄÏÂ±ê
+    // è¯¥æ–¹å—æœ€å·¦ç«¯çš„ä¸‹æ ‡
     int lbound() const {
         return ColumnBound - 1 - lbound_inner();
     }
-    // ¸Ã·½¿é×îÓÒ¶ËµÄÏÂ±ê
+    // è¯¥æ–¹å—æœ€å³ç«¯çš„ä¸‹æ ‡
     int rbound() const {
         return ColumnBound - 1 - rbound_inner();
     }
@@ -214,12 +214,12 @@ public:
         new_b.rotate_as(r);
         return new_b;
     }
-    // Ïé£¬ÒÆ¶¯.
-    // Ïò×óÒÆ¶¯ dx, µ±ÇÒ½öµ±Ã»ÓĞÃ°³ö10ÁĞÔ¼ÊøÊ±·µ»Ø true
+    // ç¥¥ï¼Œç§»åŠ¨.
+    // å‘å·¦ç§»åŠ¨ dx, å½“ä¸”ä»…å½“æ²¡æœ‰å†’å‡º10åˆ—çº¦æŸæ—¶è¿”å› true
     bool move(int dx) {
         return move_inner(-dx);
     }
-    // ²úÉúÒ»¸ö¶ÔÓ¦ÀàĞÍ¶ÔÓ¦Ğı×ª·½Ê½µÄ¿é
+    // äº§ç”Ÿä¸€ä¸ªå¯¹åº”ç±»å‹å¯¹åº”æ—‹è½¬æ–¹å¼çš„å—
     static Block make(BlockType type, int rotation = 0) {
         return Block(type, rotation);
     }
@@ -294,7 +294,7 @@ class BackMap {
         plain.fill(0);
         plain[0] = FULL;
     }
-    // È·ÈÏÏÂÂä
+    // ç¡®è®¤ä¸‹è½
     int assume(Block const& block) {
         if (!alive) {
             return 0;
@@ -303,7 +303,7 @@ class BackMap {
             block.sent();
         }
         int h = LineBound + ExtraLine;
-        // ¼ì²âÅö×²
+        // æ£€æµ‹ç¢°æ’
         for (; h > 0; --h) {
             bool hit = false;
             for (int i = 0; i < BlockBound; ++i) {
@@ -314,13 +314,13 @@ class BackMap {
             }
         }
         ++h;
-        // ·ÅÖÃ·½¿é
+        // æ”¾ç½®æ–¹å—
         for (int i = 0; i < BlockBound; ++i) {
             plain[h + i] |= block.mask[i];
         }
-        // Ïû³ı¼ì²â
+        // æ¶ˆé™¤æ£€æµ‹
         int removed = remove_detect();
-        // ´æ»î¼ì²â
+        // å­˜æ´»æ£€æµ‹
         alive = alive_detect();
         return removed;
     }
@@ -329,11 +329,11 @@ public:
         return LineProxy(plain[i]);
     }
     
-    // ÎÒ...ÏÖÔÚ¶àÉÙ·ÖÄØ
+    // æˆ‘...ç°åœ¨å¤šå°‘åˆ†å‘¢
     int current_score() const {
         return score;
     }
-    // ¼ÙÈçÎÒÏÂÂäÕâ¸ö¿é£¬»á·¢ÉúÊ²Ã´£¿
+    // å‡å¦‚æˆ‘ä¸‹è½è¿™ä¸ªå—ï¼Œä¼šå‘ç”Ÿä»€ä¹ˆï¼Ÿ
     BackMap preview(Block const& block) const {
         BackMap ret{*this};
         ret.is_preview = true;
@@ -347,11 +347,11 @@ public:
         return ret;
     }
     
-    // ÎÒ...ÏÖÔÚ»¹»î×ÅÂğ£¿
+    // æˆ‘...ç°åœ¨è¿˜æ´»ç€å—ï¼Ÿ
     bool is_alive() const {
         return alive;
     }
-    // ×î¸ß²ã
+    // æœ€é«˜å±‚
     int max_layer() const {
         for(int i = 22; ; --i) {
             if (plain[i] != 0) {
@@ -374,7 +374,7 @@ class BlockList {
             types.emplace_back((BlockType)t);
         }
     }
-    // ÒÔrotationĞı×ª·½Ê½ÄÃ³öÏÂÒ»¸ö¿é
+    // ä»¥rotationæ—‹è½¬æ–¹å¼æ‹¿å‡ºä¸‹ä¸€ä¸ªå—
     Block next_with(int rotation = 0) {
         BlockType t = types.front();
         types.pop_front();
@@ -385,7 +385,7 @@ class BlockList {
     }
     public:
 
-    // Íµ¿´µÚi¿éµÄÀàĞÍ
+    // å·çœ‹ç¬¬iå—çš„ç±»å‹
     BlockType peek(int i = 0) const {
         return types.at(i);
     }
@@ -428,12 +428,12 @@ class UserController {
         blocklist.update();
         std::cin >> n;
         // 0xh1h2h3
-        // h1 -> ±êÖ¾Î»
-        //  0: ÎŞÊÂ·¢Éú
-        //  1: ²»ÊÜ¿Ø
-        //  2: ½áÊø
-        // h2 -> Ğı×ª·½Ïò
-        // h3 -> Æ«ÒÆ¾àÀë
+        // h1 -> æ ‡å¿—ä½
+        //  0: æ— äº‹å‘ç”Ÿ
+        //  1: ä¸å—æ§
+        //  2: ç»“æŸ
+        // h2 -> æ—‹è½¬æ–¹å‘
+        // h3 -> åç§»è·ç¦»
         mask = n >> (2 * 4);
         if (mask == 0) {
             if (reset) {
@@ -477,7 +477,7 @@ public:
         return reset;
     }
     std::string reason;
-    // ´ÓÊäÈë¸üĞÂ×´Ì¬
+    // ä»è¾“å…¥æ›´æ–°çŠ¶æ€
     bool update() {
         bool f = update_inner();
         if (!f) {
@@ -515,82 +515,166 @@ struct Game {
     }
 };
 
-/* Äã¿ÉÒÔ¸ü¸ÄÕâĞĞÒÔÏÂµÄ´úÂëÃÇ */
+/* ä½ å¯ä»¥æ›´æ”¹è¿™è¡Œä»¥ä¸‹çš„ä»£ç ä»¬ */
 
-// ĞŞ¸ÄÕâ¸öº¯Êı£¬ÒÔ½øĞĞ·ÅÖÃ¾ö¶¨
-// ×¢Òâ£¬ÕâÊÇÒ»¸ö½á¹¹Ìå·½·¨
-// Äã¿ÉÒÔ·ÃÎÊ½á¹¹ÌåµÄ£º 
-// map ×Ö¶Î»ñÈ¡µØÍ¼
-// blocks ×Ö¶Î»ñÈ¡ºó±¸¶ÓÁĞ
-// ucblock ×Ö¶Î»ñÈ¡ÉÏÒ»´Î²Ù×÷ºó£¬²âÆÀ»úÊÇ·ñÏÂ½µÁË²»ÊÜ¿Ø¿é¼°ÆäÏêÇé
+// ä¿®æ”¹è¿™ä¸ªå‡½æ•°ï¼Œä»¥è¿›è¡Œæ”¾ç½®å†³å®š
+// æ³¨æ„ï¼Œè¿™æ˜¯ä¸€ä¸ªç»“æ„ä½“æ–¹æ³•
+// ä½ å¯ä»¥è®¿é—®ç»“æ„ä½“çš„ï¼š 
+// map å­—æ®µè·å–åœ°å›¾
+// blocks å­—æ®µè·å–åå¤‡é˜Ÿåˆ—
+// ucblock å­—æ®µè·å–ä¸Šä¸€æ¬¡æ“ä½œåï¼Œæµ‹è¯„æœºæ˜¯å¦ä¸‹é™äº†ä¸å—æ§å—åŠå…¶è¯¦æƒ…
+
+/*
+Block Game::once_place() {    
+    Block b = blocks[0];
+    // å·¦ç«¯ç‚¹åœ¨å“ªä¸€æ ¼ï¼Ÿ
+    int l = b.lbound();
+    // å³ç«¯ç‚¹åœ¨å“ªä¸€æ ¼ï¼Ÿ
+    int r = b.rbound();
+    assert(l <= r);
+    b.move(-l);
+    // ç¡®è®¤ä¸‹è½
+    return b;
+}
+
+*/
 
 Block Game::once_place() {
+    // æƒé‡é…ç½®
+    constexpr double kLandingHeightWeight = -3.0;
+    constexpr double kRowsClearedWeight = 1200.0;
+    constexpr double kHolesWeight = -25.0;
+    constexpr double kBumpinessWeight = -1.5;
+    constexpr double kAggregateHeightWeight = -0.8;
+    constexpr int kDangerHeightThreshold = 15;
+    constexpr double kDangerMultiplier = 2.5;
+
     Block best_block = blocks[0];
-    int max_removed = -1;
-    int best_landing_height = -1;  // ×î¼Ñ·ÅÖÃ¸ß¶È£¨Ô½´ó±íÊ¾Ô½¿¿µ×²¿£©
+    double max_score = -1e9;
+    int best_removed = 0;
+    int best_bottom_fill = 0;
+    int best_land_height = LineBound;
 
-    for (int rotation = 0; rotation < BlockRotationCount; ++rotation) {
-        Block rotated_block = blocks[0].remake_with(rotation);
-        
-        int left_bound = rotated_block.lbound();
-        int right_bound = rotated_block.rbound();
-        int max_move_left = left_bound;
-        int max_move_right = ColumnBound - right_bound - 1;
+    // é¢„è®¡ç®—å½“å‰åœ°å›¾çŠ¶æ€
+    int current_agg_height = 0;
+    int max_layer = 0;
+    for (int x = 0; x < ColumnBound; ++x) {
+        for (int y = LineBound; y >= 1; --y) {
+            if (map[y][x]) {
+                current_agg_height += (LineBound - y + 1);
+                max_layer = std::max(max_layer, y);
+                break;
+            }
+        }
+    }
 
-        for (int dx = -max_move_left; dx <= max_move_right; ++dx) {
-            Block candidate = rotated_block;
+    // éå†æ‰€æœ‰å¯èƒ½æ”¾ç½®
+    for (int rotation = 0; rotation < 4; ++rotation) {
+        Block current = blocks[0].remake_with(rotation);
+        const int min_x = -current.lbound();
+        const int max_x = ColumnBound - current.rbound();
+
+        for (int dx = min_x; dx <= max_x; ++dx) {
+            Block candidate = current;
             if (!candidate.move(dx)) continue;
 
-            int removed;
-            BackMap future_map = map.preview_rc(candidate, removed);
+            // æ¨¡æ‹Ÿä¸‹è½
+            int removed_count;
+            BackMap preview = map.preview_rc(candidate, removed_count);
             
-            // ¼ÆËã·ÅÖÃ¸ß¶È£¨ÕÒµ½·½¿éÕ¼¾İµÄ×îµÍĞĞ£©
-            int landing_height = 0;
-            if (removed == 0) {
-                // ´Óµ×²¿¿ªÊ¼ÏòÉÏÕÒµÚÒ»¸öĞÂÔö·½¿éµÄĞĞ
+            // æ‰‹åŠ¨è®¡ç®—æ‰€æœ‰ç‰¹å¾
+            int actual_land_height = LineBound;
+            int bottom_fill = 0;
+            int new_agg_height = 0;
+            int holes = 0;
+            int bumpiness = 0;
+            std::array<int, ColumnBound> col_heights{};
+            std::array<bool, ColumnBound> roof{false};
+
+            // è®¡ç®—åˆ—ç‰¹å¾
+            for (int x = 0; x < ColumnBound; ++x) {
+                // åˆ—é«˜åº¦å’Œç€é™†é«˜åº¦
                 for (int y = LineBound; y >= 1; --y) {
-                    bool found = false;
-                    for (int x = 0; x < ColumnBound; ++x) {
-                        if (future_map[y][x] && !map[y][x]) {
-                            landing_height = y;
-                            found = true;
-                            break;
-                        }
+                    if (preview[y][x]) {
+                        col_heights[x] = LineBound - y + 1;
+                        actual_land_height = std::min(actual_land_height, LineBound - y);
+                        break;
                     }
-                    if (found) break;
+                }
+                new_agg_height += col_heights[x];
+            }
+
+            // è®¡ç®—å‡¹å‡¸åº¦å’Œç©ºæ´
+            for (int y = LineBound; y >= 1; --y) {
+                // åº•å±‚å¡«å……
+                if (y == 1) {
+                    for (int x = 0; x < ColumnBound; ++x)
+                        if (preview[y][x]) bottom_fill++;
+                }
+
+                // ç©ºæ´æ£€æµ‹
+                for (int x = 0; x < ColumnBound; ++x) {
+                    if (preview[y][x]) {
+                        roof[x] = true;
+                    } else if (roof[x]) {
+                        holes++;
+                    }
+                }
+
+                // å‡¹å‡¸åº¦ç´¯è®¡
+                if (y == LineBound) continue;
+                for (int x = 0; x < ColumnBound-1; ++x) {
+                    bool current = preview[y][x];
+                    bool next = preview[y][x+1];
+                    if (current != next) bumpiness++;
                 }
             }
 
-            // ¸üĞÂ²ßÂÔ
-            bool should_update = false;
-            if (removed > max_removed) {
-                should_update = true;
-            } else if (removed == max_removed) {
-                if (removed > 0) {
-                    // Ïû³ıĞĞÊıÏàÍ¬£¬Ñ¡Ôñ¸ü¿¿½üÖĞĞÄµÄ
-                    if (abs(dx) < abs(best_block.get_x())) {
-                        should_update = true;
-                    }
-                } else {
-                    // ÎŞÏû³ıĞĞÊ±£¬Ñ¡Ôñ¸üµÍµÄ·ÅÖÃÎ»ÖÃ
-                    if (landing_height > best_landing_height || 
-                       (landing_height == best_landing_height && abs(dx) < abs(best_block.get_x()))) {
-                        should_update = true;
+            // åŠ¨æ€æƒé‡è°ƒæ•´
+            double landing_weight = kLandingHeightWeight;
+            double aggregate_weight = kAggregateHeightWeight;
+            if (max_layer >= kDangerHeightThreshold) {
+                landing_weight *= kDangerMultiplier;
+                aggregate_weight *= 1.5;
+            }
+
+            // ç»¼åˆè¯„åˆ†
+            double score = 
+                landing_weight * actual_land_height +
+                kRowsClearedWeight * removed_count +
+                kHolesWeight * holes +
+                kBumpinessWeight * bumpiness +
+                aggregate_weight * new_agg_height;
+
+            // æ›´æ–°ç­–ç•¥
+            bool update = false;
+            if (score > max_score) {
+                update = true;
+            } else if (score == max_score) {
+                if (removed_count > best_removed) {
+                    update = true;
+                } else if (removed_count == best_removed) {
+                    if (bottom_fill > best_bottom_fill) {
+                        update = true;
+                    } else if (bottom_fill == best_bottom_fill &&
+                              actual_land_height < best_land_height) {
+                        update = true;
                     }
                 }
             }
 
-            if (should_update) {
-                max_removed = removed;
-                best_landing_height = landing_height;
+            if (update) {
+                max_score = score;
+                best_removed = removed_count;
+                best_bottom_fill = bottom_fill;
+                best_land_height = actual_land_height;
                 best_block = candidate;
             }
         }
     }
     return best_block;
 }
-
-/* µ«ÊÇ²»ÒªĞŞ¸Ä main º¯Êı */
+/* ä½†æ˜¯ä¸è¦ä¿®æ”¹ main å‡½æ•° */
 
 int main() {
     UserController systemctl;
