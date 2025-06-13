@@ -2,7 +2,7 @@
 
 using namespace std;
 
-bool f(int n){
+bool Is_hei(int n){
     while(n!=0){
         int x=n%10;
         n=n/10;
@@ -20,10 +20,11 @@ bool f(int n){
 }
 
 int main(){
+    vector<int> dp(10000005);
     int left,right,count=0;
     cin>>left>>right;
     for(int i=left;i<=right;i++){
-        if(!f(i)){
+        if(!Is_hei(i)){
             count++;
         }
     }

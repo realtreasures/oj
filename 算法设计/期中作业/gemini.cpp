@@ -1,7 +1,7 @@
 #if __cplusplus < 201700L
 #error "C++17 required"
 #endif
-
+#include <limits> // 引入 numeric_limits
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -511,6 +511,17 @@ struct Game {
     BlockList const&blocks;
     std::optional<Block>const& ucblock;
     Block once_place();
+
+    // 添加以下函数声明
+    double calculate_value(const BackMap& next_map, const Block& placed_block);
+    int calculate_priority(int horizontal_moves, int rotations);
+    int calculate_landing_height(const BackMap& map, const Block& block);
+    int calculate_eroded_piece_cells_metric(const BackMap& previous_map, const Block& placed_block);
+    int calculate_board_row_transitions(const BackMap& map);
+    int calculate_board_col_transitions(const BackMap& map);
+    int calculate_board_burie_holes(const BackMap& map);
+    int calculate_board_wells(const BackMap& map);
+
     Game(UserController const&ctl) : map(ctl.map()),blocks(ctl.blocks()),ucblock(ctl.ucblock()) {
     }
 };
@@ -524,242 +535,151 @@ struct Game {
 // blocks 字段获取后备队列
 // ucblock 字段获取上一次操作后，测评机是否下降了不受控块及其详情
 
-/* 你可以更改这行以下的代码们 */
-#include <vector>
-#include <climits>
-
-// 权重参数配置
-constexpr int HEIGHT_WEIGHT = -5;
-constexpr int LINES_WEIGHT = 3;
-constexpr int HOLES_WEIGHT = -8;
-constexpr int BUMPINESS_WEIGHT = -2;
-
-class MapAnalyzer {
-public:
-    static int calculateAggregateHeight(const BackMap& map) {
-        int total = 0;
-        for (int col = 0; col < ColumnBound; ++col) {
-            total += getColumnHeight(map, col);
-        }
-        return total;
-    }
-
-    static int calculateHoles(const BackMap& map) {
-        int holes = 0;
-        std::array<int, ColumnBound> heights = getColumnHeights(map);
-        
-        for (int col = 0; col < ColumnBound; ++col) {
-            int height = heights[col];
-            for (int row = 1; row <= height; ++row) {
-                if (!map[row][col]) holes++;
-            }
-        }
-        return holes;
-    }
-
-    static int calculateBumpiness(const BackMap& map) {
-        std::array<int, ColumnBound> heights = getColumnHeights(map);
-        int bumpiness = 0;
-        for (int i = 0; i < ColumnBound-1; ++i) {
-            bumpiness += abs(heights[i] - heights[i+1]);
-        }
-        return bumpiness;
-    }
-
-public:
-    static std::array<int, ColumnBound> getColumnHeights(const BackMap& map) {
-        std::array<int, ColumnBound> heights{};
-        for (int col = 0; col < ColumnBound; ++col) {
-            heights[col] = getColumnHeight(map, col);
-        }
-        return heights;
-    }
-
-    static int getColumnHeight(const BackMap& map, int col) {
-        for (int row = LineBound; row >= 1; --row) {
-            if (map[row][col]) return row;
-        }
-        return 0;
-    }
-};
-
-// 新增评估指标权重
-constexpr int WELLS_WEIGHT = -5;       // 井深惩罚
-constexpr int BLOCKADE_WEIGHT = -3;    // 封锁区域惩罚
-
-class EnhancedMapAnalyzer : public MapAnalyzer {
-public:
-    static int calculateWells(const BackMap& map) {
-        int wells = 0;
-        auto heights = getColumnHeights(map);
-        // 中间列检测
-        for(int col = 1; col < ColumnBound-1; ++col) {
-            int left = heights[col-1];
-            int right = heights[col+1];
-            int current = heights[col];
-            if(current < left && current < right) {
-                wells += std::min(left, right) - current;
-            }
-        }
-        // 边缘列检测
-        if(heights[0] < heights[1]) wells += heights[1] - heights[0];
-        if(heights[ColumnBound-1] < heights[ColumnBound-2]) 
-            wells += heights[ColumnBound-2] - heights[ColumnBound-1];
-        return wells;
-    }
-
-    static int calculateBlockades(const BackMap& map) {
-        int blockades = 0;
-        auto heights = getColumnHeights(map);
-        for(int col = 0; col < ColumnBound; ++col) {
-            if(heights[col] <= 1) continue;
-            bool hasAir = false;
-            for(int row = heights[col]; row >= 1; --row) {
-                if(!map[row][col]) hasAir = true;
-                else if(hasAir) blockades++;
-            }
-        }
-        return blockades;
-    }
-};
-
 Block Game::once_place() {
-    Block original = blocks[0];
-    int maxScore = INT_MIN;
-    Block bestBlock = original;
-    const int DEATH_LAYER = 18;
+    Block current_block = blocks[0];
+    double best_value = -std::numeric_limits<double>::infinity();
+    int best_priority = std::numeric_limits<int>::infinity();
+    Block best_placement = current_block;
 
-    class EnhancedMapAnalyzer {
-    public:
-        static int calculateWells(const BackMap& map) {
-            std::array<int, ColumnBound> heights{};
-            for (int col = 0; col < ColumnBound; ++col) {
-                for (int row = LineBound; row >= 1; --row) {
-                    if (map[row][col]) {
-                        heights[col] = row;
-                        break;
-                    }
-                }
-            }
-            int wells = 0;
-            for (int col = 1; col < ColumnBound - 1; ++col) {
-                int left = heights[col - 1];
-                int right = heights[col + 1];
-                int current = heights[col];
-                if (current < left && current < right) {
-                    wells += std::min(left, right) - current;
-                }
-            }
-            if (heights[0] < heights[1]) wells += heights[1] - heights[0];
-            if (heights[ColumnBound - 1] < heights[ColumnBound - 2])
-                wells += heights[ColumnBound - 2] - heights[ColumnBound - 1];
-            return wells;
-        }
+    for (int rotation = 0; rotation < BlockRotationCount; ++rotation) {
+        Block rotated_block = current_block.remake_with(rotation);
+        int l = rotated_block.lbound();
+        int r = rotated_block.rbound();
 
-        static int calculateBlockades(const BackMap& map) {
-            std::array<int, ColumnBound> heights{};
-            for (int col = 0; col < ColumnBound; ++col) {
-                for (int row = LineBound; row >= 1; --row) {
-                    if (map[row][col]) {
-                        heights[col] = row;
-                        break;
-                    }
-                }
-            }
-            int blockades = 0;
-            for (int col = 0; col < ColumnBound; ++col) {
-                if (heights[col] <= 1) continue;
-                bool hasAir = false;
-                for (int row = heights[col]; row >= 1; --row) {
-                    if (!map[row][col]) hasAir = true;
-                    else if (hasAir) blockades++;
-                }
-            }
-            return blockades;
-        }
-    };
+        for (int x = -l; x <= ColumnBound - 1 - r; ++x) {
+            Block moved_block = rotated_block;
+            moved_block.move(x);
 
-    // 动态权重调整
-    int lines_weight = LINES_WEIGHT;
-    int height_weight = HEIGHT_WEIGHT;
-    int wells_weight = WELLS_WEIGHT;
-    
-    // 检测初始垫底情况（关卡2）
-    bool hasInitialLayers = false;
-    for(int row = 1; row <= 3; ++row) {
-        bool isNonEmpty = false;
-        for (int col = 0; col < ColumnBound; ++col) {
-            if (map[row][col]) {
-                isNonEmpty = true;
-                break;
-            }
-        }
-        if (isNonEmpty) {
-            hasInitialLayers = true;
-            break;
-        }
-    }
-    if(hasInitialLayers) {
-        lines_weight *= 2;          // 加强消行奖励
-        height_weight -= 2;         // 加强高度惩罚
-    }
+            // 模拟方块下落并获取最终的地图状态
+            BackMap next_map = map.preview(moved_block);
 
-    // 检测不受控块存在（关卡4）
-    if(ucblock.has_value()) {
-        wells_weight -= 3;         // 加强井深惩罚
-        height_weight -= 1;         // 额外高度惩罚
-    }
+            // 计算评估值
+            double current_value = calculate_value(next_map, moved_block);
 
-    std::vector<int> rotations;
-    BlockType type = original.type();
-    if (type == BlockType::Square) rotations = {0};
-    else if (type == BlockType::One || type == BlockType::Column) rotations = {0, 1};
-    else rotations = {0, 1, 2, 3};
+            // 计算优先级（水平移动次数和旋转次数）
+            int horizontal_moves = std::abs(x);
+            int current_priority = calculate_priority(horizontal_moves, rotation);
 
-    for (int r : rotations) {
-        Block rotated = original.remake_with(r);
-        
-        for (int dx = -ColumnBound; dx <= ColumnBound; ++dx) {
-            Block temp = rotated;
-            if (!temp.move(dx)) continue;
-
-            BackMap preview = map.preview(temp);
-            if (preview.max_layer() > DEATH_LAYER) continue;
-
-            int lines = preview.current_score() - map.current_score();
-            int aggregateHeight = MapAnalyzer::calculateAggregateHeight(preview);
-            int holes = MapAnalyzer::calculateHoles(preview);
-            int bumpiness = MapAnalyzer::calculateBumpiness(preview);
-            int wells = EnhancedMapAnalyzer::calculateWells(preview);
-            int blockades = EnhancedMapAnalyzer::calculateBlockades(preview);
-
-            int score = 
-                height_weight * aggregateHeight +
-                lines_weight * lines +
-                HOLES_WEIGHT * holes +
-                BUMPINESS_WEIGHT * bumpiness +
-                wells_weight * wells +
-                BLOCKADE_WEIGHT * blockades;
-
-            if(!ucblock.has_value() && !hasInitialLayers) {
-                score -= abs(bumpiness) * 2;
-                int maxH = preview.max_layer();
-                if(maxH < 15) score += (15 - maxH) * 2;
-            }
-
-            if(score > maxScore || (score == maxScore && temp.get_x() < bestBlock.get_x())) {
-                maxScore = score;
-                bestBlock = temp;
+            // 更新最优放置
+            if (current_value > best_value || (current_value == best_value && current_priority < best_priority)) {
+                best_value = current_value;
+                best_priority = current_priority;
+                best_placement = moved_block;
             }
         }
     }
-
-    if(!bestBlock.move(0)) {
-        return original;
-    }
-    return bestBlock;
+    return best_placement;
 }
-/* 但是不要修改 main 函数 */
+
+double Game::calculate_value(const BackMap& next_map, const Block& placed_block) {
+    // 实现评估函数的各个参数计算
+    int landingHeight = calculate_landing_height(next_map, placed_block);
+    int erodedPieceCellsMetric = calculate_eroded_piece_cells_metric(map, placed_block);
+    int boardRowTransitions = calculate_board_row_transitions(next_map);
+    int boardColTransitions = calculate_board_col_transitions(next_map);
+    int boardBurieHoles = calculate_board_burie_holes(next_map);
+    int boardWells = calculate_board_wells(next_map);
+
+    // 应用权重计算最终评估值
+    return -45.0 * landingHeight - 34.0 * boardWells + 34.0 * erodedPieceCellsMetric -
+           93.0 * boardColTransitions - 79.0 * boardBurieHoles - 32.0 * boardRowTransitions;
+}
+
+int Game::calculate_priority(int horizontal_moves, int rotations) {
+    return 100 * horizontal_moves + rotations;
+}
+
+// 辅助函数声明（需要在 Game 类中实现）
+int Game::calculate_landing_height(const BackMap& map, const Block& block) {
+    // 计算方块放置后，板块重心位置距离底部的距离
+    // ... 实现 ...
+    return 0; // 占位符
+}
+
+int Game::calculate_eroded_piece_cells_metric(const BackMap& previous_map, const Block& placed_block) {
+    // 模拟放置方块并消除行，计算消除的行数与该板块被消除的方格数的乘积
+    BackMap next_map = previous_map.preview(placed_block);
+    int removed_lines = 0;
+    BackMap temp_map = previous_map;
+    temp_map.assume(placed_block);
+    // 这里需要比较 temp_map 和 previous_map 的差异来确定被消除的行
+    // 并计算 placed_block 中有多少方格位于被消除的行中
+    int eroded_block_cells = 0;
+    // ... 实现 ...
+    return removed_lines * eroded_block_cells; // 占位符
+}
+
+int Game::calculate_board_row_transitions(const BackMap& map) {
+    // 计算每一行中从无方格到有方格或从有方格到无方格的变换次数之和
+    int transitions = 0;
+    for (int i = 1; i < LineBound + ExtraLine + BlockBound; ++i) {
+        LineMask row = map.plain[i];
+        bool filled = (row & (1 << (ColumnBound - 1))) != 0;
+        for (int j = ColumnBound - 2; j >= 0; --j) {
+            bool next_filled = (row & (1 << j)) != 0;
+            if (filled != next_filled) {
+                transitions++;
+            }
+            filled = next_filled;
+        }
+    }
+    return transitions;
+}
+
+int Game::calculate_board_col_transitions(const BackMap& map) {
+    // 计算每一列中从无方格到有方格或从有方格到无方格的变换次数之和
+    int transitions = 0;
+    for (int j = 0; j < ColumnBound; ++j) {
+        bool filled = (map.plain[1] & (1 << (ColumnBound - 1 - j))) != 0;
+        for (int i = 2; i < LineBound + ExtraLine + BlockBound; ++i) {
+            bool next_filled = (map.plain[i] & (1 << (ColumnBound - 1 - j))) != 0;
+            if (filled != next_filled) {
+                transitions++;
+            }
+            filled = next_filled;
+        }
+    }
+    return transitions;
+}
+
+int Game::calculate_board_burie_holes(const BackMap& map) {
+    // 计算各列中“空洞”数目总和
+    int holes = 0;
+    for (int j = 0; j < ColumnBound; ++j) {
+        bool block_above = false;
+        for (int i = 1; i < LineBound + ExtraLine + BlockBound; ++i) {
+            if ((map.plain[i] & (1 << (ColumnBound - 1 - j))) != 0) {
+                block_above = true;
+            } else if (block_above) {
+                holes++;
+            }
+        }
+    }
+    return holes;
+}
+
+int Game::calculate_board_wells(const BackMap& map) {
+    // 计算各列中“井”的连加和
+    int wells_sum = 0;
+    for (int j = 0; j < ColumnBound; ++j) {
+        bool left_filled = (j == 0) || (map.plain[1] & (1 << (ColumnBound - j))) != 0;
+        bool right_filled = (j == ColumnBound - 1) || (map.plain[1] & (1 << (ColumnBound - 2 - j))) != 0;
+        if (left_filled && right_filled && (map.plain[1] & (1 << (ColumnBound - 1 - j))) == 0) {
+            int depth = 0;
+            for (int i = 1; i < LineBound + ExtraLine + BlockBound; ++i) {
+                if ((map.plain[i] & (1 << (ColumnBound - 1 - j))) == 0 &&
+                    ((j == 0) || (map.plain[i] & (1 << (ColumnBound - j))) != 0) &&
+                    ((j == ColumnBound - 1) || (map.plain[i] & (1 << (ColumnBound - 2 - j))) != 0)) {
+                    depth++;
+                    wells_sum += depth;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    return wells_sum;
+}
 
 /* 但是不要修改 main 函数 */
 
