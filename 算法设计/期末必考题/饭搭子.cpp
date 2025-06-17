@@ -14,8 +14,8 @@ int main(){
     int r=n-1;
     int l=0;
     int ans=0;
-    while(r>l){
-        if(stu[0]+stu[r]<=w){
+    while(r>=l){
+        if(stu[l]+stu[r]<=w){
             r--;
             l++;
         }
