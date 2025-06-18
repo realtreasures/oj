@@ -3,8 +3,6 @@
 using namespace std;
 typedef long long ll;
 int main(){
-        ios::sync_with_stdio(false);
-    cin.tie(nullptr);
     int n,m;
     int qb=0;
     cin>>n>>m;
@@ -17,7 +15,7 @@ int main(){
         cin>>val[i];
         qb+=val[i]*num[i];
     }
-    vector<int> dp(100000,1);
+    vector<int> dp(10000,1);
     dp[0]=1;
     for(int i=0;i<n;i++){
         for(int j=qb;j>=0;j--){

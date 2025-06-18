@@ -57,7 +57,7 @@ int main() {
             }
         }
 
-        if (BFS(dungeon, M, N)) {
+        if (BFS(dungeon, M, N))  {
             cout << "YES" << endl;
         } else {
             cout << "NO" << endl;

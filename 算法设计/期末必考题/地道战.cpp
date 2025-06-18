@@ -14,8 +14,8 @@ int f(vector<int> &arr,int i,int n,vector<int> &dp){
     int skip=f(arr,i+1,n,dp);
     dp[i]=max(take,skip);
     return dp[i];
-
 }
+
 int main(){
     int n;
     cin>>n;
