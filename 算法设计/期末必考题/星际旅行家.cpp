@@ -1,39 +1,53 @@
-#include<iostream>
-#include<vector>
+#include <iostream>
+#include <vector>
+#include <queue>
 using namespace std;
 
-void f(vector<vector<int>> &arr,vector<int> &visited,int i,int n){
-    if(visited[i]==0){
-        return;
+int main() {
+    
+    int n, m;
+    cin >> n >> m;
+    
+    // 邻接表存储图结构
+    vector<vector<int>> graph(n + 1);
+    // 访问标记数组
+    vector<bool> visited(n + 1, false);
+    
+    // 构建星门连接
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        graph[u].push_back(v);
+        graph[v].push_back(u);  // 无向图，双向连接
     }
-    visited[i]=0;
-    for(int j=1;j<=n;j++){
-        if(j==i){
-            continue;
+    
+    // 从1号星球开始BFS遍历
+    queue<int> q;
+    q.push(1);
+    visited[1] = true;
+    
+    while (!q.empty()) {
+        int cur = q.front();
+        q.pop();
+        
+        // 遍历当前星球的所有邻居
+        for (int neighbor : graph[cur]) {
+            if (!visited[neighbor]) {
+                visited[neighbor] = true;
+                q.push(neighbor);
+            }
         }
-        if(arr[i][j]==0){
-            f(arr,visited,j,n);
+    }
+    
+    // 统计无法到达的星球数量
+    int unreachable = 0;
+    for (int i = 1; i <= n; i++) {
+        if (!visited[i]) {
+            unreachable++;
         }
     }
-}
-int main(){
-    int n,m;
-    cin>>n>>m;
-    vector<int> visited(n+1,-1);
-    vector<vector<int>> arr(n+1,vector<int>(n+1,-1));
-    for(int i=0;i<m;i++){
-        int u,v;
-        cin>>u>>v;
-        arr[u][v]=0;
-        arr[v][u]=0;
-    }
-    f(arr,visited,1,n);
-    int ans=0;
-    for(int i=1;i<=n;i++){
-        if(visited[i]==-1){
-            ans++;
-        }
-    }
-    cout<<ans<<endl;
+    
+    cout << unreachable << endl;
+    
     return 0;
 }
