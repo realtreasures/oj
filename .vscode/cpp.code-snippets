@@ -1,0 +1,20 @@
+{
+  "C++ 竞赛模板": {
+    "scope": "cpp",
+    "prefix": "cpp",
+    "body": [
+      "#include <bits/stdc++.h>",
+      "using namespace std;",
+      "",
+      "int main() {",
+      "    ios::sync_with_stdio(false); // 关闭同步，加快输入输出",
+      "    cin.tie(nullptr); // 解除 cin 和 cout 的绑定",
+      "",
+      "    $0",
+      "",
+      "    return 0;",
+      "}"
+    ],
+    "description": "只在当前文件夹生效的 C++ 模板"
+  }
+}
